@@ -31,24 +31,26 @@ def substract(op_1, op_2):
         return (str(e), http.client.BAD_REQUEST, HEADERS)
 
 
-# Nuevo servicio para multiplicación
+# Microservicio para multiplicación
 @api_application.route("/calc/multiply/<op_1>/<op_2>", methods=["GET"])
 def multiply(op_1, op_2):
     try:
         num_1, num_2 = util.convert_to_number(op_1), util.convert_to_number(op_2)
-        return ("{}".format(CALCULATOR.multiply(num_1, num_2)), http.client.OK, HEADERS)
+        result = CALCULATOR.multiply(num_1, num_2)
+        return ("{}".format(result), http.client.OK, HEADERS)
     except TypeError as e:
         return (str(e), http.client.BAD_REQUEST, HEADERS)
 
 
-# Nuevo servicio para división
+# Microservicio para división con manejo de división por cero
 @api_application.route("/calc/divide/<op_1>/<op_2>", methods=["GET"])
 def divide(op_1, op_2):
     try:
         num_1, num_2 = util.convert_to_number(op_1), util.convert_to_number(op_2)
         if num_2 == 0:
             return ("Cannot divide by zero", http.client.NOT_ACCEPTABLE, HEADERS)
-        return ("{}".format(CALCULATOR.divide(num_1, num_2)), http.client.OK, HEADERS)
+        result = CALCULATOR.divide(num_1, num_2)
+        return ("{}".format(result), http.client.OK, HEADERS)
     except TypeError as e:
         return (str(e), http.client.BAD_REQUEST, HEADERS)
 
