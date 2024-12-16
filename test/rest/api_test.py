@@ -14,6 +14,7 @@ class TestApi(unittest.TestCase):
         self.assertTrue(len(BASE_URL) > 8, "URL no configurada")
 
     def test_api_add(self):
+        # Prueba de suma con números válidos
         url = f"{BASE_URL}/calc/add/1/2"
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
@@ -24,6 +25,7 @@ class TestApi(unittest.TestCase):
         )
 
     def test_api_substract(self):
+        # Prueba de resta con números válidos
         url = f"{BASE_URL}/calc/substract/5/3"
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
@@ -34,19 +36,19 @@ class TestApi(unittest.TestCase):
         )
 
     def test_api_multiply(self):
-        # Prueba de multiplicación con números válidos
-        url = f"{BASE_URL}/calc/multiply/3/2"  # Usamos 3 y 2 como números válidos
+        # Prueba de multiplicación con números reales
+        url = f"{BASE_URL}/calc/multiply/3.5/2.1"  # Usamos 3.5 y 2.1 como números reales
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.OK, f"Error en la petición API a {url}"
         )
         self.assertEqual(
-            response.read().decode(), "6", "ERROR MULTIPLY"
+            response.read().decode(), "7.35", "ERROR MULTIPLY"
         )
 
     def test_api_divide(self):
-        # Prueba de división con números válidos
-        url = f"{BASE_URL}/calc/divide/6/2"  # Usamos 6 y 2 como números válidos
+        # Prueba de división con números reales
+        url = f"{BASE_URL}/calc/divide/7.5/2.5"  # Usamos 7.5 y 2.5 como números reales
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.OK, f"Error en la petición API a {url}"
