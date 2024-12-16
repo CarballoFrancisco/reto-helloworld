@@ -36,7 +36,7 @@ class TestApi(unittest.TestCase):
         )
 
     def test_api_multiply(self):
-        # Prueba de multiplicación con números reales
+        # Prueba de multiplicación con dos números reales
         url = f"{BASE_URL}/calc/multiply/3.5/2.1"  # Usamos 3.5 y 2.1 como números reales
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
@@ -47,7 +47,7 @@ class TestApi(unittest.TestCase):
         )
 
     def test_api_divide(self):
-        # Prueba de división con números reales
+        # Prueba de división con dos números reales
         url = f"{BASE_URL}/calc/divide/7.5/2.5"  # Usamos 7.5 y 2.5 como números reales
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
