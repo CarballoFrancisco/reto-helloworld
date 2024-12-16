@@ -2,7 +2,6 @@ import http.client
 import os
 import unittest
 from urllib.request import urlopen
-
 import pytest
 
 BASE_URL = "http://localhost:5000"
@@ -35,8 +34,8 @@ class TestApi(unittest.TestCase):
         )
 
     def test_api_multiply(self):
-        # Prueba de multiplicación
-        url = f"{BASE_URL}/calc/multiply/3/2"
+        # Prueba de multiplicación con números válidos
+        url = f"{BASE_URL}/calc/multiply/3/2"  # Usamos 3 y 2 como números válidos
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.OK, f"Error en la petición API a {url}"
@@ -46,8 +45,8 @@ class TestApi(unittest.TestCase):
         )
 
     def test_api_divide(self):
-        # Prueba de división
-        url = f"{BASE_URL}/calc/divide/6/2"
+        # Prueba de división con números válidos
+        url = f"{BASE_URL}/calc/divide/6/2"  # Usamos 6 y 2 como números válidos
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.OK, f"Error en la petición API a {url}"
@@ -69,7 +68,7 @@ class TestApi(unittest.TestCase):
 
     def test_api_multiply_invalid_input(self):
         # Prueba de entrada no válida en multiplicación
-        url = f"{BASE_URL}/calc/multiply/2/a"
+        url = f"{BASE_URL}/calc/multiply/2/a"  # Usamos 2 y 'a' para simular un error
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.BAD_REQUEST, f"Error en la petición API a {url}"
@@ -80,7 +79,7 @@ class TestApi(unittest.TestCase):
 
     def test_api_divide_invalid_input(self):
         # Prueba de entrada no válida en división
-        url = f"{BASE_URL}/calc/divide/2/a"
+        url = f"{BASE_URL}/calc/divide/2/a"  # Usamos 2 y 'a' para simular un error
         response = urlopen(url, timeout=DEFAULT_TIMEOUT)
         self.assertEqual(
             response.status, http.client.BAD_REQUEST, f"Error en la petición API a {url}"
@@ -89,7 +88,7 @@ class TestApi(unittest.TestCase):
             "Invalid input", response.read().decode(), "ERROR INVALID INPUT DIVIDE"
         )
 
-
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
 
