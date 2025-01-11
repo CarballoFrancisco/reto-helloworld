@@ -1,5 +1,7 @@
 import http.client
+
 from flask import Flask
+
 from app import util
 from app.calc import Calculator
 
@@ -16,28 +18,16 @@ def hello():
 @api_application.route("/calc/add/<op_1>/<op_2>", methods=["GET"])
 def add(op_1, op_2):
     try:
-        num_1 = util.convert_to_number(op_1)
-        num_2 = util.convert_to_number(op_2)
-        result = CALCULATOR.add(num_1, num_2)
-        return ("{}".format(result), http.client.OK, HEADERS)
-
+        num_1, num_2 = util.convert_to_number(op_1), util.convert_to_number(op_2)
+        return ("{}".format(CALCULATOR.add(num_1, num_2)), http.client.OK, HEADERS)
     except TypeError as e:
-        error_message = str(e)
-        return (error_message, http.client.BAD_REQUEST, HEADERS)
+        return (str(e), http.client.BAD_REQUEST, HEADERS)
 
 
-@api_application.route("/calc/subtract/<op_1>/<op_2>", methods=["GET"])
-def subtract(op_1, op_2):
+@api_application.route("/calc/substract/<op_1>/<op_2>", methods=["GET"])
+def substract(op_1, op_2):
     try:
-        num_1 = util.convert_to_number(op_1)
-        num_2 = util.convert_to_number(op_2)
-        result = CALCULATOR.subtract(num_1, num_2)
-        return ("{}".format(result), http.client.OK, HEADERS)
-
+        num_1, num_2 = util.convert_to_number(op_1), util.convert_to_number(op_2)
+        return ("{}".format(CALCULATOR.substract(num_1, num_2)), http.client.OK, HEADERS)
     except TypeError as e:
-        error_message = str(e)
-        return (error_message, http.client.BAD_REQUEST, HEADERS)
-
-
-if __name__ == "__main__":
-    api_application.run(debug=True)
+        return (str(e), http.client.BAD_REQUEST, HEADERS)
