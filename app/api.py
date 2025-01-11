@@ -20,6 +20,7 @@ def add(op_1, op_2):
         num_2 = util.convert_to_number(op_2)
         result = CALCULATOR.add(num_1, num_2)
         return ("{}".format(result), http.client.OK, HEADERS)
+    
     except TypeError as e:
         error_message = str(e)
         return (error_message, http.client.BAD_REQUEST, HEADERS)
@@ -32,7 +33,9 @@ def subtract(op_1, op_2):
         num_2 = util.convert_to_number(op_2)
         result = CALCULATOR.subtract(num_1, num_2)
         return ("{}".format(result), http.client.OK, HEADERS)
+    
     except TypeError as e:
         error_message = str(e)
         return (error_message, http.client.BAD_REQUEST, HEADERS)
+
 
