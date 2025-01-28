@@ -1,6 +1,5 @@
 pipeline {
     agent none
-
     stages {
         stage('Get Code') {
             agent { label 'agente1' }
@@ -11,7 +10,7 @@ pipeline {
                 echo "El espacio de trabajo es: ${env.WORKSPACE}"
                 git url: 'https://github.com/CarballoFrancisco/reto-helloworld.git'
                 bat 'dir'
-                stash includes: '**', name: 'workspace'
+                stash includes: '', name: 'workspace'
             }
         }
 
@@ -33,8 +32,9 @@ pipeline {
                         }
                     }
                 }
+
                 stage('Rest') {
-                    agent { label 'agente2' }
+                    agent { label 'agente1' }
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                             echo "Ejecutando en agente: ${env.NODE_NAME}"
@@ -64,8 +64,9 @@ pipeline {
         // Segundo bloque de paralelo: Static, Security, Coverage y Performance
         stage('Static, Security, Coverage & Performance') {
             parallel {
+
                 stage('Static') {
-                    agent { label 'agente1' }
+                    agent { label 'agente2' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             script {
@@ -97,7 +98,7 @@ pipeline {
                 }
 
                 stage('Coverage') {
-                    agent { label 'agente1' }
+                    agent { label 'agente2' }
                     steps {
                         script {
                             cobertura coberturaReportFile: 'coverage.xml',
@@ -131,8 +132,9 @@ pipeline {
 
     post {
         always {
-            // Limpiar el workspace en el nodo donde se ejecutó el trabajo
-            cleanWs() 
+            node('agente2') {
+                cleanWs() // Limpiar el workspace después de todas las etapas en un nodo específico
+            }
         }
     }
 }
