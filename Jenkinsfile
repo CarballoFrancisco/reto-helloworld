@@ -9,7 +9,14 @@ pipeline {
                 bat 'whoami'
                 bat 'hostname'
                 echo "El espacio de trabajo es: ${env.WORKSPACE}"
-                git url: 'https://github.com/CarballoFrancisco/reto-helloworld.git'
+
+                // Verificar si git está instalado
+                bat 'git --version'
+
+                // Clonar el repositorio
+                echo "Clonando el repositorio..."
+                bat 'git clone https://github.com/CarballoFrancisco/reto-helloworld.git'
+
                 bat 'dir'
                 stash includes: '**', name: 'workspace'
             }
@@ -64,20 +71,20 @@ pipeline {
         // Segundo bloque de paralelo: Static, Security, Coverage y Performance
         stage('Static, Security, Coverage & Performance') {
             parallel {
-                  stage('Static') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    script {
-                        bat 'flake8 --exit-zero --format=pylint app >flake8.out'
-                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
-                                     qualityGates: [
-                                         [threshold: 8, type: 'TOTAL', unstable: true],
-                                         [threshold: 10, type: 'TOTAL', unstable: false]
-                                     ]
+                stage('Static') {
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            script {
+                                bat 'flake8 --exit-zero --format=pylint app >flake8.out'
+                                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
+                                             qualityGates: [
+                                                 [threshold: 8, type: 'TOTAL', unstable: true],
+                                                 [threshold: 10, type: 'TOTAL', unstable: false]
+                                             ]
+                            }
+                        }
                     }
                 }
-            }
-        }
 
                 stage('Security') {
                     agent { label 'agente2' }
