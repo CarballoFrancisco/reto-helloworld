@@ -1,78 +1,138 @@
 pipeline {
-    agent none  // No se asigna un agente global al principio
+    agent none
 
     stages {
-        // Etapa de clonación del repositorio y verificación de archivos
-        stage('Clonar repositorio y verificar archivos') {
-            agent { label 'agente1' }  // Asignar esta etapa al agente1
+        stage('Get Code') {
+            agent { label 'agente1' }
             steps {
                 echo "Ejecutando en agente: ${env.NODE_NAME}"
                 bat 'whoami'
                 bat 'hostname'
                 echo "El espacio de trabajo es: ${env.WORKSPACE}"
-                git 'https://github.com/CarballoFrancisco/reto-helloworld.git'
+                git url: 'https://github.com/CarballoFrancisco/reto-helloworld.git'
                 bat 'dir'
-                stash includes: '**/*', name: 'repoFiles'  // Stash de los archivos del repositorio
+                stash includes: '**', name: 'workspace'
             }
         }
 
-        // Etapa para verificar espacio de trabajo en un segundo agente
-        stage('Verificar espacio de trabajo') {
-            agent { label 'agente2' }  // Asignar esta etapa al agente2
-            steps {
-                echo "Ejecutando en agente: ${env.NODE_NAME}"
-                bat 'whoami'
-                bat 'hostname'
-                echo "El espacio de trabajo es: ${env.WORKSPACE}"
-                unstash 'repoFiles'  // Recuperar archivos del stash
-            }
-        }
-
-        // Etapa de Build
-        stage('Build') {
-            agent { label 'agente2' }  // Asignar esta etapa al agente2
-            steps {
-                echo "Ejecutando en agente: ${env.NODE_NAME}"
-                bat 'whoami'
-                bat 'hostname'
-                echo "El espacio de trabajo es: ${env.WORKSPACE}"
-                echo 'Realizando la compilación o proceso de build'
-            }
-        }
-
-        // Etapa de pruebas unitarias
-        stage('unit') {
-            agent { label 'agente1' }  // Asignar esta etapa al agente1
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    echo "Ejecutando en agente: ${env.NODE_NAME}"
-                    bat 'whoami'
-                    bat 'hostname'
-                    echo "El espacio de trabajo es: ${env.WORKSPACE}"
-                    bat 'set PYTHONPATH=%WORKSPACE%\\'
-                    bat 'python -m pytest --junitxml=result-unit.xml test\\unit'
-                    stash includes: 'result-unit.xml', name: 'unitTestResults'  // Stash de resultados de las pruebas unitarias
+        // Primer bloque de paralelo: Unit y Rest
+        stage('Unit & Rest') {
+            parallel {
+                stage('Unit') {
+                    agent { label 'agente1' }
+                    steps {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            echo "Ejecutando en agente: ${env.NODE_NAME}"
+                            bat 'whoami'
+                            bat 'hostname'
+                            echo "El espacio de trabajo es: ${env.WORKSPACE}"
+                            unstash 'workspace'
+                            bat 'set PYTHONPATH=${WORKSPACE}\\'
+                            bat 'python -m pytest --junitxml=result-unit.xml test\\unit'
+                            stash includes: 'result-unit.xml', name: 'unitTestResults'
+                        }
+                    }
+                }
+                stage('Rest') {
+                    agent { label 'agente2' }
+                    steps {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            echo "Ejecutando en agente: ${env.NODE_NAME}"
+                            bat 'whoami'
+                            bat 'hostname'
+                            echo "El espacio de trabajo es: ${env.WORKSPACE}"
+                            unstash 'workspace'
+                            echo 'Iniciando WireMock en Docker'
+                            bat '''
+                                docker run -d --name wiremock -p 9090:8080 wiremock/wiremock:latest
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            echo 'Deteniendo y eliminando el contenedor de WireMock'
+                            bat '''
+                                docker stop wiremock
+                                docker rm wiremock
+                            '''
+                        }
+                    }
                 }
             }
         }
 
-        // Etapa de pruebas REST
-        stage('Rest') {
-            agent { label 'agente2' }  // Asignar esta etapa al agente2
-            steps {
-                echo "Ejecutando en agente: ${env.NODE_NAME}"
-                bat 'whoami'
-                bat 'hostname'
-                echo "El espacio de trabajo es: ${env.WORKSPACE}"
-                unstash 'unitTestResults'  // Recuperar resultados de pruebas unitarias
-                bat '''
-                    docker run -d --name wiremock -p 9090:8080 -v C:/ProgramData/Jenkins/.jenkins/workspace/casoPractico1/test/wiremock/mappings:/home/wiremock/mappings wiremock/wiremock:latest
-                    set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/reto1/app/api.py
-                    start /B python -m flask run --host=0.0.0.0 --port=5000
-                    set PYTHONPATH=%WORKSPACE%
-                    pytest --junitxml=result-rest.xml test\\rest
-                '''
-                stash includes: 'result-rest.xml', name: 'restTestResults'  // Stash de resultados de las pruebas REST
+        // Segundo bloque de paralelo: Static, Security, Coverage y Performance
+        stage('Static, Security, Coverage & Performance') {
+            parallel {
+                stage('Static') {
+                    agent { label 'agente1' }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            script {
+                                bat 'flake8 --exit-zero --format=pylint app >flake8.out'
+                                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
+                                             qualityGates: [
+                                                 [threshold: 8, type: 'TOTAL', unstable: true],
+                                                 [threshold: 10, type: 'TOTAL', unstable: false]
+                                             ]
+                            }
+                        }
+                    }
+                }
+
+                stage('Security') {
+                    agent { label 'agente2' }
+                    steps {
+                        script {
+                            bat '''
+                                bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}]: {msg}"
+                            '''
+                        }
+                        recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
+                                     qualityGates: [
+                                         [threshold: 2, type: 'TOTAL', unstable: true],
+                                         [threshold: 4, type: 'TOTAL', unstable: false]
+                                     ]
+                    }
+                }
+
+                stage('Coverage') {
+                    agent { label 'agente1' }
+                    steps {
+                        script {
+                            cobertura coberturaReportFile: 'coverage.xml',
+                                      lineCoverageTargets: '95,0,85',
+                                      conditionalCoverageTargets: '90,0,80',
+                                      onlyStable: false
+                        }
+                    }
+                }
+
+                stage('Performance') {
+                    agent { label 'agente2' }
+                    steps {
+                        bat '''
+                            set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/test1/app/api.py
+                            start /B flask run
+                            "C:\\Users\\carba\\Desktop\\apache-jmeter-5.6.3\\apache-jmeter-5.6.3\\bin\\jmeter" -n -t "test\\jmeter\\flask.jmx" -f -l "flask.jtl"
+                        '''
+                        perfReport sourceDataFiles: 'flask.jtl'
+                    }
+                    post {
+                        always {
+                            echo 'Deteniendo el proceso Flask'
+                            bat 'taskkill /F /IM flask.exe'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            node('agente1') {
+                cleanWs() // Limpiar el workspace después de todas las etapas en un nodo específico
             }
         }
     }
