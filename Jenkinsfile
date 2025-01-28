@@ -11,7 +11,7 @@ pipeline {
                 echo "El espacio de trabajo es: ${env.WORKSPACE}"
                 git url: 'https://github.com/CarballoFrancisco/reto-helloworld.git'
                 bat 'dir'
-                stash includes: '', name: 'workspace'
+                stash includes: '**', name: 'workspace'
             }
         }
 
@@ -133,6 +133,6 @@ pipeline {
             node('agente1') {
                 cleanWs() // Limpiar el workspace después de todas las etapas en un nodo específico
             }
-        }
-    }
+        }
+    }
 }
