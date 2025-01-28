@@ -1,39 +1,70 @@
 pipeline {
-    agent any
+    agent none
 
     stages {
         stage('Get Code') {
+            agent { label 'agente1' }
             steps {
-                git 'https://github.com/CarballoFrancisco/reto-helloworld.git'
+                echo "Ejecutando en agente: ${env.NODE_NAME}"
+                bat 'whoami'
+                bat 'hostname'
+                echo "El espacio de trabajo es: ${env.WORKSPACE}"
+                git url: 'https://github.com/CarballoFrancisco/reto-helloworld.git'
                 bat 'dir'
-                echo "WORKSPACE: ${env.WORKSPACE}"
+                stash includes: '', name: 'workspace'
             }
         }
 
-        stage('Unit') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    bat 'set PYTHONPATH=%WORKSPACE%\\'
-                    bat 'python -m pytest --junitxml=result-unit.xml test\\unit'
-                    junit 'result*.xml'
-                    bat 'python -m coverage run --branch --source=app --omit=app\\_init.py,app\\api.py -m pytest test\\unit'
-                    bat 'python -m coverage xml'
+        // Primer bloque de paralelo: Unit y Rest
+        stage('Unit & Rest') {
+            parallel {
+                stage('Unit') {
+                    agent { label 'agente1' }
+                    steps {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            echo "Ejecutando en agente: ${env.NODE_NAME}"
+                            bat 'whoami'
+                            bat 'hostname'
+                            echo "El espacio de trabajo es: ${env.WORKSPACE}"
+                            unstash 'workspace'
+                            bat 'set PYTHONPATH=${WORKSPACE}\\'
+                            bat 'python -m pytest --junitxml=result-unit.xml test\\unit'
+                            stash includes: 'result-unit.xml', name: 'unitTestResults'
+                        }
+                    }
+                }
+                stage('Rest') {
+                    agent { label 'agente2' }
+                    steps {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                            echo "Ejecutando en agente: ${env.NODE_NAME}"
+                            bat 'whoami'
+                            bat 'hostname'
+                            echo "El espacio de trabajo es: ${env.WORKSPACE}"
+                            unstash 'workspace'
+                            echo 'Iniciando WireMock en Docker'
+                            bat '''
+                                docker run -d --name wiremock -p 9090:8080 wiremock/wiremock:latest
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            echo 'Deteniendo y eliminando el contenedor de WireMock'
+                            bat '''
+                                docker stop wiremock
+                                docker rm wiremock
+                            '''
+                        }
+                    }
                 }
             }
         }
 
-        stage('Rest') {
-            steps {
-                script {
-                    echo 'Iniciando WireMock en Docker'
-                    bat '''
-                        docker run -d --name wiremock -p 9090:8080 wiremock/wiremock:latest
-                    '''
-                }
-            }
-        }
-
-         stage('Static') {
+        // Segundo bloque de paralelo: Static, Security, Coverage y Performance
+        stage('Static, Security, Coverage & Performance') {
+            parallel {
+                  stage('Static') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     script {
@@ -48,42 +79,60 @@ pipeline {
             }
         }
 
-        stage('Security') {
-            steps {
-                script {
-                    bat '''
-                        bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}]: {msg}"
-                    '''
+                stage('Security') {
+                    agent { label 'agente2' }
+                    steps {
+                        script {
+                            bat '''
+                                bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}]: {msg}"
+                            '''
+                        }
+                        recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
+                                     qualityGates: [
+                                         [threshold: 2, type: 'TOTAL', unstable: true],
+                                         [threshold: 4, type: 'TOTAL', unstable: false]
+                                     ]
+                    }
                 }
-                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
-                             qualityGates: [
-                                 [threshold: 2, type: 'TOTAL', unstable: true],
-                                 [threshold: 4, type: 'TOTAL', unstable: false]
-                             ]
-            }
-        }
 
-        stage('Coverage') {
-            steps {
-                script {
-
-                    cobertura coberturaReportFile: 'coverage.xml',
-                              lineCoverageTargets: '95,0,85',
-                              conditionalCoverageTargets: '90,0,80',
-                              onlyStable: false
+                stage('Coverage') {
+                    agent { label 'agente1' }
+                    steps {
+                        script {
+                            cobertura coberturaReportFile: 'coverage.xml',
+                                      lineCoverageTargets: '95,0,85',
+                                      conditionalCoverageTargets: '90,0,80',
+                                      onlyStable: false
+                        }
+                    }
                 }
-            }
-        }
 
-        stage('Performance') {
-            steps {
-                bat '''
-                    set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/test1/app/api.py
-                    start /B flask run
-                    "C:\\Users\\carba\\Desktop\\apache-jmeter-5.6.3\\apache-jmeter-5.6.3\\bin\\jmeter" -n -t "test\\jmeter\\flask.jmx" -f -l "flask.jtl"
-                '''
-                perfReport sourceDataFiles: 'flask.jtl'
+                stage('Performance') {
+                    agent { label 'agente2' }
+                    steps {
+                        bat '''
+                            set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/test1/app/api.py
+                            start /B flask run
+                            "C:\\Users\\carba\\Desktop\\apache-jmeter-5.6.3\\apache-jmeter-5.6.3\\bin\\jmeter" -n -t "test\\jmeter\\flask.jmx" -f -l "flask.jtl"
+                        '''
+                        perfReport sourceDataFiles: 'flask.jtl'
+                    }
+                    post {
+                        always {
+                            echo 'Deteniendo el proceso Flask'
+                            bat 'taskkill /F /IM flask.exe'
+                        }
+                    }
+                }
             }
         }
     }
+
+    post {
+        always {
+            node('agente1') {
+                cleanWs() // Limpiar el workspace después de todas las etapas en un nodo específico
+            }
+        }
+    }
 }
