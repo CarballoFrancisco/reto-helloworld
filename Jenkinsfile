@@ -64,20 +64,21 @@ pipeline {
         // Segundo bloque de paralelo: Static, Security, Coverage y Performance
         stage('Static, Security, Coverage & Performance') {
             parallel {
-                  stage('Static') {
-            steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    script {
-                        bat 'flake8 --exit-zero --format=pylint app >flake8.out'
-                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
-                                     qualityGates: [
-                                         [threshold: 8, type: 'TOTAL', unstable: true],
-                                         [threshold: 10, type: 'TOTAL', unstable: false]
-                                     ]
+                stage('Static') {
+                    agent { label 'agente1' }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            script {
+                                bat 'flake8 --exit-zero --format=pylint app >flake8.out'
+                                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
+                                             qualityGates: [
+                                                 [threshold: 8, type: 'TOTAL', unstable: true],
+                                                 [threshold: 10, type: 'TOTAL', unstable: false]
+                                             ]
+                            }
+                        }
                     }
                 }
-            }
-        }
 
                 stage('Security') {
                     agent { label 'agente2' }
@@ -130,9 +131,8 @@ pipeline {
 
     post {
         always {
-            node('agente1') {
-                cleanWs() // Limpiar el workspace después de todas las etapas en un nodo específico
-            }
+            // Limpiar el workspace en el nodo donde se ejecutó el trabajo
+            cleanWs() 
         }
     }
 }
