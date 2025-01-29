@@ -33,7 +33,7 @@ pipeline {
             }
         }
 
-         stage('Static') {
+        stage('Static') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     script {
