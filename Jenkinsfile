@@ -123,15 +123,7 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            // Envolvemos la limpieza en un bloque node con un label específico
-            node('agente1') { // O usa 'agente2', dependiendo del agente que prefieras
-                echo "Limpieza del workspace al finalizar el pipeline..."
-                cleanWs() // Limpia el workspace después de todas las etapas
-            }
-        }
-    }
 }
+
 
 
