@@ -18,7 +18,7 @@ class Calculator:
     def divide(self, x, y):
         self.check_types(x, y)
         if y == 0:
-            raise ZeroDivisionError("Division by zero is not possible")  # Se corrige el error
+            raise ZeroDivisionError("not posible")  # Se corrige el error
 
         return x / y
 
