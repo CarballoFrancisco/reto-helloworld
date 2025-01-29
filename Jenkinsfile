@@ -10,7 +10,7 @@ pipeline {
             }
         }
 
-        stage('Unit') {
+       stage('Unit') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     bat 'set PYTHONPATH=%WORKSPACE%\\'
@@ -33,21 +33,20 @@ pipeline {
             }
         }
 
-stage('Static') {
-    steps {
-        catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-            script {
-                bat 'flake8 --exit-zero --format=pylint app >flake8.out'
-                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
-                             qualityGates: [
-                                 [threshold: 8, type: 'TOTAL', unstable: true],  // Marca como inestable si supera 8
-                                 [threshold: 10, type: 'TOTAL', unstable: false] // Marca como fallido si supera 10
-                             ]
+         stage('Static') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    script {
+                        bat 'flake8 --exit-zero --format=pylint app >flake8.out'
+                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')],
+                                     qualityGates: [
+                                         [threshold: 8, type: 'TOTAL', unstable: true],
+                                         [threshold: 10, type: 'TOTAL', unstable: false]
+                                     ]
+                    }
+                }
             }
         }
-    }
-}
-
 
         stage('Security') {
             steps {
@@ -88,4 +87,3 @@ stage('Static') {
         }
     }
 }
-
