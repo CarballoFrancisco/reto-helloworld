@@ -113,28 +113,16 @@ pipeline {
                     agent { label 'agente2' }
                     steps {
                         bat '''
-                            set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/test1/app/api.py
+                            set FLASK_APP=C:\\Users\\carba\\.jenkins\\workspace\\agentesTarea2\\app\\api.py
                             start /B flask run
                             "C:\\Users\\carba\\Desktop\\apache-jmeter-5.6.3\\apache-jmeter-5.6.3\\bin\\jmeter" -n -t "test\\jmeter\\flask.jmx" -f -l "flask.jtl"
                         '''
                         perfReport sourceDataFiles: 'flask.jtl'
                     }
-                    post {
-                        always {
-                            echo 'Deteniendo el proceso Flask'
-                            bat 'taskkill /F /IM flask.exe'
-                        }
-                    }
                 }
             }
         }
     }
-
-    post {
-        always {
-            node('agente2') {
-                cleanWs() // Limpiar el workspace después de todas las etapas en un nodo específico
-            }
-        }
-    }
 }
+
+
