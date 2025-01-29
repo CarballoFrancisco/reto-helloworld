@@ -8,7 +8,7 @@ class Calculator:
         self.check_types(x, y)
         return x + y
 
-    def subtract(self, x, y):  # Corrected typo
+    def subtract(self, x, y):  # Nombre corregido de 'substract' a 'subtract'
         self.check_types(x, y)
         return x - y
 
@@ -19,7 +19,7 @@ class Calculator:
     def divide(self, x, y):
         self.check_types(x, y)
         if y == 0:
-            raise ZeroDivisionError("Division by zero is not possible")  # Corrected exception
+            raise ZeroDivisionError("Division by zero is not possible")  # Excepción corregida
         return x / y
 
     def power(self, x, y):
@@ -34,4 +34,5 @@ if __name__ == "__main__":  # pragma: no cover
     calc = Calculator()
     result = calc.add(2, 2)
     print(result)
+
 
