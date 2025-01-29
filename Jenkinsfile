@@ -64,7 +64,6 @@ pipeline {
         // Segundo bloque de paralelo: Static, Security, Coverage y Performance
         stage('Static, Security, Coverage & Performance') {
             parallel {
-
                 stage('Static') {
                     agent { label 'agente2' }
                     steps {
@@ -120,6 +119,16 @@ pipeline {
                         perfReport sourceDataFiles: 'flask.jtl'
                     }
                 }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Envolvemos la limpieza en un bloque node con un label específico
+            node('agente1') { // O usa 'agente2', dependiendo del agente que prefieras
+                echo "Limpieza del workspace al finalizar el pipeline..."
+                cleanWs() // Limpia el workspace después de todas las etapas
             }
         }
     }
