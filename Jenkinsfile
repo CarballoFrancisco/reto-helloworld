@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
-                git 'https://github.com/CarballoFrancisco/reto-helloworld.git'
+                git branch: 'master url: 'https://github.com/CarballoFrancisco/reto-helloworld.git'
                 bat 'dir'
                 echo "WORKSPACE: ${env.WORKSPACE}"
             }
