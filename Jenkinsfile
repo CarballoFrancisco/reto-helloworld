@@ -78,7 +78,7 @@ pipeline {
         stage('Performance') {
             steps {
                 bat '''
-                    set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/test/app/api.py
+                    set FLASK_APP=C:/ProgramData/Jenkins/.jenkins/workspace/test1/app/api.py
                     start /B flask run
                     "C:\\Users\\carba\\Desktop\\apache-jmeter-5.6.3\\apache-jmeter-5.6.3\\bin\\jmeter" -n -t "test\\jmeter\\flask.jmx" -f -l "flask.jtl"
                 '''
