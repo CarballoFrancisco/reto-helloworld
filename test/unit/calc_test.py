@@ -25,7 +25,11 @@ class TestCalculate(unittest.TestCase):
         self.assertEqual(1, self.calc.divide(2, 2))
         self.assertEqual(1.5, self.calc.divide(3, 2))
         self.assertRaises(TypeError, self.calc.divide, "2", 2)
-  
+        
+        # Aquí agregamos el test para cubrir el caso de división por cero
+        with self.assertRaises(ZeroDivisionError):  # Verifica que se lance la excepción
+            self.calc.divide(5, 0)
+
     def test_add_method_fails_with_nan_parameter(self):
         self.assertRaises(TypeError, self.calc.add, "2", 2)
         self.assertRaises(TypeError, self.calc.add, 2, "2")
@@ -64,3 +68,4 @@ class TestCalculate(unittest.TestCase):
         
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
