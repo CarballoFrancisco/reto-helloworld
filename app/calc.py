@@ -19,7 +19,7 @@ class Calculator:
     def divide(self, x, y):
         self.check_types(x, y)
         if y == 0:
-            raise ZeroDivisionError("Division by zero is not possible")
+            ra
         return x / y
 
     def power(self, x, y):
